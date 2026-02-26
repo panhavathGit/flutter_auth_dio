@@ -1,44 +1,80 @@
+import 'package:auth_dio/core/utils/logger.dart';
 import 'package:dio/dio.dart';
 import '../datasources/auth_datasource.dart';
 import '../models/user_model.dart';
+import '../models/http/auth_request.dart';
 import '../../../../core/services/storage_service.dart';
 
 class AuthRepository {
-  final AuthDatasource _datasource;   // ← abstract, accepts mock or real
+  final AuthDatasource _datasource; // ← abstract, accepts mock or real
   final StorageService _storageService;
 
   AuthRepository(this._datasource, this._storageService);
 
-  Future<UserModel> login(String email, String password) async {
+  // Future<UserModel> login(String username, String password) async {
+  //   try {
+  //     // 1. Create Request
+  //     final request = AuthRequest(username: username, password: password);
+
+  //     // 2. Execute Login
+  //     final authResponse = await _datasource.login(request);
+
+  //     // 3. Save all credentials to Storage
+  //     await _storageService.saveAccessToken(authResponse.accessToken);
+  //     await _storageService.saveRefreshToken(authResponse.refreshToken);
+  //     await _storageService.saveUserId(authResponse.userId);
+
+  //     // 4. Fetch the full Profile (Hydration)
+  //     return await _datasource.getProfile(authResponse.userId);
+  //   } on DioException catch (e) {
+  //     throw _handleError(e);
+  //   }
+  // }
+
+    Future<UserModel> login(String username, String password) async {
     try {
-      final user = await _datasource.login(email, password);
-      await _storageService.saveToken(user.token);
-      return user;
+      final request = AuthRequest(username: username, password: password);
+      final authResponse = await _datasource.login(request);
+      await _storageService.saveAccessToken(authResponse.accessToken);
+      await _storageService.saveRefreshToken(authResponse.refreshToken);
+      await _storageService.saveUserId(authResponse.userId);
+      return await _datasource.getProfile(authResponse.userId);
     } on DioException catch (e) {
       throw _handleError(e);
     } catch (e) {
-      throw e.toString(); // catches mock exceptions too
+      AppLogger.e('❌ NON-DIO ERROR: $e'); // ← add this
+      rethrow;
     }
   }
 
-  Future<UserModel> register(String name, String email, String password) async {
+  Future<UserModel> register(
+    String name,
+    String username,
+    String password,
+  ) async {
     try {
-      final user = await _datasource.register(name, email, password);
-      await _storageService.saveToken(user.token);
-      return user;
+      final request = AuthRequest(
+        username: username,
+        password: password,
+      );
+      final authResponse = await _datasource.register(request);
+
+      await _storageService.saveAccessToken(authResponse.accessToken);
+      await _storageService.saveRefreshToken(authResponse.refreshToken);
+      await _storageService.saveUserId(authResponse.userId);
+
+      return await _datasource.getProfile(authResponse.userId);
     } on DioException catch (e) {
       throw _handleError(e);
-    } catch (e) {
-      throw e.toString();
     }
   }
 
   Future<UserModel?> getProfile() async {
     try {
-      return await _datasource.getProfile();
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 401) return null;
-      throw _handleError(e);
+      final userId = await _storageService.getUserId();
+      if (userId == null) return null;
+
+      return await _datasource.getProfile(userId);
     } catch (e) {
       return null;
     }
@@ -47,19 +83,38 @@ class AuthRepository {
   Future<void> logout() async {
     try {
       await _datasource.logout();
-    } catch (_) {
-      // even if logout API fails, clear token locally
     } finally {
-      await _storageService.clearToken();
+      // Always clear storage even if the API call fails
+      await _storageService.clearAll();
     }
   }
 
+  // String _handleError(DioException e) {
+  //   if (e.type == DioExceptionType.connectionTimeout) {
+  //     return 'Connection timeout. Check your internet.';
+  //   } else if (e.response?.statusCode == 401) {
+  //     return 'Invalid email or password.';
+  //   }
+
+  //   return 'Something went wrong. Please try again.';
+  // }
+
   String _handleError(DioException e) {
+    // ← add these debug lines
+    AppLogger.e('❌ DioException type: ${e.type}');
+    AppLogger.e('❌ Status code: ${e.response?.statusCode}');
+    AppLogger.e('❌ Response data: ${e.response?.data}');
+    AppLogger.e('❌ Message: ${e.message}');
+
     if (e.type == DioExceptionType.connectionTimeout) {
       return 'Connection timeout. Check your internet.';
     } else if (e.response?.statusCode == 401) {
       return 'Invalid email or password.';
     }
+
     return 'Something went wrong. Please try again.';
   }
+  
+
+  
 }

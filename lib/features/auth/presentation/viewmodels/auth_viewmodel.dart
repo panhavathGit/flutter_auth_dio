@@ -18,10 +18,43 @@ class AuthViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoading => _state == AuthState.loading;
 
-  Future<bool> login(String email, String password) async {
+  
+  // Future<bool> login(String username, String password) async {
+  //   _errorMessage = null; // Clear previous errors
+  //   _setState(AuthState.loading);
+  //   try {
+  //     // The Repository now handles building the AuthRequest and saving tokens
+  //     _user = await _authRepository.login(username, password);
+  //     _setState(AuthState.success);
+  //     return true;
+  //   } catch (e) {
+  //     _errorMessage = e.toString();
+  //     _setState(AuthState.error);
+  //     return false;
+  //   }
+  // }
+
+    Future<bool> login(String username, String password) async {
+    _errorMessage = null;
     _setState(AuthState.loading);
     try {
-      _user = await _authRepository.login(email, password);
+      _user = await _authRepository.login(username, password);
+      _setState(AuthState.success);
+      return true;
+    } catch (e) {
+      debugPrint('❌ LOGIN ERROR: $e'); // ← add this to see real error
+      _errorMessage = e.toString();
+      _setState(AuthState.error);
+      return false;
+    }
+  }
+
+  Future<bool> register(String name, String username, String password) async {
+    _errorMessage = null; // Clear previous errors
+    _setState(AuthState.loading);
+    try {
+      // Passes the 3 fields needed for your Express registration
+      _user = await _authRepository.register(name, username, password);
       _setState(AuthState.success);
       return true;
     } catch (e) {
@@ -31,22 +64,10 @@ class AuthViewModel extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
-  _setState(AuthState.loading);
-  try {
-    _user = await _authRepository.register(name, email, password);
-    _setState(AuthState.success);
-    return true;
-  } catch (e) {
-    _errorMessage = e.toString();
-    _setState(AuthState.error);
-    return false;
-  }
-}
-
   Future<void> logout() async {
     await _authRepository.logout();
     _user = null;
+    _errorMessage = null;
     _setState(AuthState.idle);
   }
 
@@ -54,7 +75,11 @@ class AuthViewModel extends ChangeNotifier {
     _setState(AuthState.loading);
     try {
       _user = await _authRepository.getProfile();
-      _setState(AuthState.success);
+      if (_user != null) {
+        _setState(AuthState.success);
+      } else {
+        _setState(AuthState.idle);
+      }
     } catch (e) {
       _errorMessage = e.toString();
       _setState(AuthState.error);

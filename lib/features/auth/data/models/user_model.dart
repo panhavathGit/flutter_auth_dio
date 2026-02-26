@@ -1,22 +1,35 @@
+import 'package:json_annotation/json_annotation.dart';
+
+part 'user_model.g.dart';
+
+@JsonSerializable()
 class UserModel {
-  final String id;
-  final String name;
-  final String email;
-  final String token;
+  final int id;
+  final String fullname;
+  final String username;
+  final String phone;
+  final String? dob;    // Nullable in case the user hasn't set it
+  final String? gender; 
+  final String? address;
+
+  @JsonKey(name: 'firebaesToken') // Mapping the typo from your backend
+  final String? firebaseToken;
+
+  final String? createdDate;
 
   UserModel({
     required this.id,
-    required this.name,
-    required this.email,
-    required this.token,
+    required this.fullname,
+    required this.username,
+    required this.phone,
+    this.dob,
+    this.gender,
+    this.address,
+    this.firebaseToken,
+    this.createdDate,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
-    return UserModel(
-      id: json['id'].toString(),
-      name: json['name'],
-      email: json['email'],
-      token: json['token'],
-    );
-  }
+  factory UserModel.fromJson(Map<String, dynamic> json) => _$UserModelFromJson(json);
+  
+  Map<String, dynamic> toJson() => _$UserModelToJson(this);
 }

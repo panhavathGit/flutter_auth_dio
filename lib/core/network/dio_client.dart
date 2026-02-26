@@ -16,7 +16,7 @@ class DioClient {
   DioClient(this._storageService) {
     _dio = Dio(
       BaseOptions(
-        baseUrl: AppConfig.baseUrl,
+        baseUrl: AppConfig.baseUrl, // this is where our dio connect to the backend api
         connectTimeout: const Duration(seconds: 10),
         receiveTimeout: const Duration(seconds: 10),
         headers: {
@@ -26,7 +26,7 @@ class DioClient {
       ),
     );
 
-    _dio.interceptors.add(AuthInterceptor(_storageService));
+    _dio.interceptors.add(AuthInterceptor(_storageService,_dio));
   }
 
   Dio get dio => _dio;

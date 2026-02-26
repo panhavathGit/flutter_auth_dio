@@ -1,32 +1,53 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-// This is shared_preference 
-
 class StorageService {
-  static const String _tokenKey = 'auth_token';
-  static const String _userEmailKey = 'user_email';
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+  static const String _userIdKey = 'user_id';
 
-  // Save token after login
-  Future<void> saveToken(String token) async {
+  // --- Access Token ---
+  Future<void> saveAccessToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
+    await prefs.setString(_accessTokenKey, token);
   }
 
-  // Read token for every request
-  Future<String?> getToken() async {
+  Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
+    return prefs.getString(_accessTokenKey);
   }
 
-  // Delete token on logout
-  Future<void> clearToken() async {
+  // --- Refresh Token ---
+  Future<void> saveRefreshToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    await prefs.setString(_refreshTokenKey, token);
   }
 
-  // Check if user is logged in
+  Future<String?> getRefreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_refreshTokenKey);
+  }
+
+  // --- User ID (Needed for the Profile API call) ---
+  Future<void> saveUserId(int id) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_userIdKey, id);
+  }
+
+  Future<int?> getUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_userIdKey);
+  }
+
+  // --- Clear Everything on Logout ---
+  Future<void> clearAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_accessTokenKey);
+    await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_userIdKey);
+  }
+
   Future<bool> isLoggedIn() async {
-    final token = await getToken();
+    final token = await getAccessToken();
     return token != null && token.isNotEmpty;
   }
 }

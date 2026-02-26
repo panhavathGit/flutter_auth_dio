@@ -1,7 +1,9 @@
 import 'auth_datasource.dart';
+import '../models/http/auth_request.dart';
+import '../models/http/auth_response.dart';
 import '../models/user_model.dart';
 import '../../../../core/network/dio_client.dart';
-import 'package:auth_dio/core/routes/api_routes.dart';
+import 'package:auth_dio/core/config/api_config.dart';
 
 /// Receives DioClient via constructor injection
 
@@ -11,32 +13,34 @@ class AuthRemoteDatasource implements AuthDatasource {
   AuthRemoteDatasource(this._dioClient);
 
   @override
-  Future<UserModel> login(String email, String password) async {
+  Future<AuthResponse> login(AuthRequest request) async {
     final response = await _dioClient.dio.post(
-      ApiRoutes.login,
-      data: {'email': email, 'password': password},
+      ApiConfig.login,
+      data: request.toJson(), // Uses the generated AuthRequest.toJson()
     );
-    return UserModel.fromJson(response.data);
+    return AuthResponse.fromJson(response.data);
   }
 
   @override
-  Future<UserModel> register(String name, String email, String password) async {
+  Future<AuthResponse> register(AuthRequest request) async {
     final response = await _dioClient.dio.post(
-      ApiRoutes.register, 
-      data: {'name': name, 'email': email, 'password': password},
+      ApiConfig.register, 
+      data: request.toJson(),
     );
-    return UserModel.fromJson(response.data);
+    return AuthResponse.fromJson(response.data);
   }
 
   @override
-  Future<UserModel?> getProfile() async {
-    final response = await _dioClient.dio.get(ApiRoutes.profile); 
+  Future<UserModel> getProfile(int userId) async {
+    final response = await _dioClient.dio.get(
+      ApiConfig.profile, // ✅ no userId appended, token auto-attached by AuthInterceptor
+    );
     return UserModel.fromJson(response.data);
   }
 
   @override
   Future<void> logout() async {
-    await _dioClient.dio.post(ApiRoutes.logout); 
+    // await _dioClient.dio.post(ApiConfig.logout); 
+    return;
   }
-
 }

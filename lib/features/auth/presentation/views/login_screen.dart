@@ -41,8 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    labelText: 'Phone number',
+                    prefixIcon: Icon(Icons.phone),
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => v!.isEmpty ? 'Enter your email' : null,

@@ -20,13 +20,17 @@ void main() async {
   final dioClient = DioClient(storageService);
 
   // ─── Switch between mock and real datasource ───
-  final authDatasource = AppConfig.useMock
-      ? AuthMockDatasource()
-      : AuthRemoteDatasource(dioClient);
+  // final authDatasource = AppConfig.useMock
+  //     ? AuthMockDatasource()
+  //     : AuthRemoteDatasource(dioClient);
 
-  final todoDatasource = AppConfig.useMock
-      ? TodoMockDatasource()
-      : TodoRemoteDatasource(dioClient);
+    final authDatasource = AuthRemoteDatasource(dioClient);
+
+  // final todoDatasource = AppConfig.useMock
+  //     ? TodoMockDatasource()
+  //     : TodoRemoteDatasource(dioClient);
+    final todoDatasource = TodoMockDatasource();
+     
   // ───────────────────────────────────────────────
 
   final authRepository = AuthRepository(authDatasource, storageService);
