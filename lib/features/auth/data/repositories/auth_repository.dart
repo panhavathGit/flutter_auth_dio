@@ -31,7 +31,7 @@ class AuthRepository {
   //   }
   // }
 
-    Future<UserModel> login(String username, String password) async {
+  Future<UserModel> login(String username, String password) async {
     try {
       final request = AuthRequest(username: username, password: password);
       final authResponse = await _datasource.login(request);
@@ -84,37 +84,25 @@ class AuthRepository {
     try {
       await _datasource.logout();
     } finally {
-      // Always clear storage even if the API call fails
+      // Always clear storage even if the API call fails,
+      // this because current backend does not have logout, we need to 
+      // handle logout directly on client-side (mobile)
       await _storageService.clearAll();
     }
   }
 
-  // String _handleError(DioException e) {
-  //   if (e.type == DioExceptionType.connectionTimeout) {
-  //     return 'Connection timeout. Check your internet.';
-  //   } else if (e.response?.statusCode == 401) {
-  //     return 'Invalid email or password.';
-  //   }
-
-  //   return 'Something went wrong. Please try again.';
-  // }
-
   String _handleError(DioException e) {
-    // ← add these debug lines
-    AppLogger.e('❌ DioException type: ${e.type}');
-    AppLogger.e('❌ Status code: ${e.response?.statusCode}');
-    AppLogger.e('❌ Response data: ${e.response?.data}');
-    AppLogger.e('❌ Message: ${e.message}');
+    AppLogger.e('DioException type: ${e.type}');
+    AppLogger.e('Status code: ${e.response?.statusCode}');
+    AppLogger.e('Response data: ${e.response?.data}');
+    AppLogger.e('Message: ${e.message}');
 
     if (e.type == DioExceptionType.connectionTimeout) {
       return 'Connection timeout. Check your internet.';
     } else if (e.response?.statusCode == 401) {
       return 'Invalid email or password.';
     }
-
     return 'Something went wrong. Please try again.';
   }
-  
-
   
 }

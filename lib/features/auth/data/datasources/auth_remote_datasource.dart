@@ -33,7 +33,7 @@ class AuthRemoteDatasource implements AuthDatasource {
   @override
   Future<UserModel> getProfile(int userId) async {
     final response = await _dioClient.dio.get(
-      ApiConfig.profile, // ✅ no userId appended, token auto-attached by AuthInterceptor
+      ApiConfig.profile, // no userId added, token auto-attached by AuthInterceptor
     );
     return UserModel.fromJson(response.data);
   }

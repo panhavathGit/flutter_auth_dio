@@ -1,3 +1,4 @@
+import 'package:auth_dio/core/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import '../../data/models/user_model.dart';
 import '../../data/repositories/auth_repository.dart';
@@ -18,23 +19,7 @@ class AuthViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isLoading => _state == AuthState.loading;
 
-  
-  // Future<bool> login(String username, String password) async {
-  //   _errorMessage = null; // Clear previous errors
-  //   _setState(AuthState.loading);
-  //   try {
-  //     // The Repository now handles building the AuthRequest and saving tokens
-  //     _user = await _authRepository.login(username, password);
-  //     _setState(AuthState.success);
-  //     return true;
-  //   } catch (e) {
-  //     _errorMessage = e.toString();
-  //     _setState(AuthState.error);
-  //     return false;
-  //   }
-  // }
-
-    Future<bool> login(String username, String password) async {
+  Future<bool> login(String username, String password) async {
     _errorMessage = null;
     _setState(AuthState.loading);
     try {
@@ -42,7 +27,7 @@ class AuthViewModel extends ChangeNotifier {
       _setState(AuthState.success);
       return true;
     } catch (e) {
-      debugPrint('❌ LOGIN ERROR: $e'); // ← add this to see real error
+      AppLogger.e('LOGIN ERROR: $e'); 
       _errorMessage = e.toString();
       _setState(AuthState.error);
       return false;
@@ -53,7 +38,7 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null; // Clear previous errors
     _setState(AuthState.loading);
     try {
-      // Passes the 3 fields needed for your Express registration
+      // Passes the 3 fields needed for Express registration
       _user = await _authRepository.register(name, username, password);
       _setState(AuthState.success);
       return true;
