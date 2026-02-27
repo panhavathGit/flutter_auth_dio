@@ -26,7 +26,7 @@ class DioClient {
       ),
     );
 
-    _dio.interceptors.add(AuthInterceptor(_storageService,_dio));
+    _dio.interceptors.add(AuthInterceptor(_storageService,_dio)); //Every request now passes through AuthInterceptor automatically
   }
 
   Dio get dio => _dio;
