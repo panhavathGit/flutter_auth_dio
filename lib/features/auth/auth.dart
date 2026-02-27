@@ -5,8 +5,8 @@ library auth;
 //=========================
 
 // Models
-export 'data/models/http/auth_request.dart';
-export 'data/models/http/auth_response.dart';
+export 'data/models/http/auth/auth_request.dart';
+export 'data/models/http/auth/auth_response.dart';
 
 
 // Datasources

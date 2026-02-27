@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
-import '../../../todo/presentation/views/todo_form_screen.dart';
+import '../../../../core/routes/app_routes.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -11,53 +12,63 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController(); // username
+  final _otpController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _referralController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<AuthViewModel>();
+    // Determine if we are on Step 1 or Step 2
+    bool isOtpSent = viewModel.state == AuthState.otpSent;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: Text(isOtpSent ? 'Verify OTP' : 'Create Account')),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Register',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-                const Text('Create a new account',
-                    style: TextStyle(color: Colors.grey)),
-                const SizedBox(height: 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(isOtpSent ? 'Verification' : 'Register',
+                  style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+              Text(isOtpSent ? 'Enter the code sent to your phone' : 'Enter your phone to get started',
+                  style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 32),
 
+              // STEP 1: Phone Input (Hidden when OTP is sent)
+              if (!isOtpSent) ...[
                 TextFormField(
-                  controller: _nameController,
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
-                    labelText: 'Full Name',
-                    prefixIcon: Icon(Icons.person_outlined),
+                    labelText: 'Phone Number',
+                    prefixIcon: Icon(Icons.phone_android),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => v!.isEmpty ? 'Enter your name' : null,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
+                _buildButton(
+                  label: 'Get OTP',
+                  isLoading: viewModel.isLoading,
+                  onPressed: () => _requestOtp(viewModel),
+                ),
+              ],
 
+              // STEP 2: OTP & Password (Shown only after OTP is sent)
+              if (isOtpSent) ...[
                 TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email_outlined),
+                    labelText: 'OTP Code',
+                    prefixIcon: Icon(Icons.vibration),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => v!.isEmpty ? 'Enter your email' : null,
                 ),
                 const SizedBox(height: 16),
-
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -66,75 +77,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outlined),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscurePassword
-                          ? Icons.visibility_off
-                          : Icons.visibility),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
+                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
-                  validator: (v) =>
-                      v!.length < 6 ? 'Password must be at least 6 characters' : null,
                 ),
                 const SizedBox(height: 24),
-
-                Consumer<AuthViewModel>(
-                  builder: (context, viewModel, _) {
-                    if (viewModel.state == AuthState.error) {
-                      return Column(
-                        children: [
-                          Text(viewModel.errorMessage ?? 'Register failed',
-                              style: const TextStyle(color: Colors.red)),
-                          const SizedBox(height: 8),
-                          _buildRegisterButton(viewModel),
-                        ],
-                      );
-                    }
-                    return _buildRegisterButton(viewModel);
-                  },
+                _buildButton(
+                  label: 'Complete Registration',
+                  isLoading: viewModel.isLoading,
+                  onPressed: () => _completeRegister(viewModel),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => viewModel.resetToIdle(),
+                    child: const Text('Change Phone Number'),
+                  ),
                 ),
               ],
-            ),
+              
+              if (viewModel.state == AuthState.error)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(viewModel.errorMessage ?? 'Error occurred',
+                      style: const TextStyle(color: Colors.red)),
+                ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildRegisterButton(AuthViewModel viewModel) {
+  Widget _buildButton({required String label, required bool isLoading, required VoidCallback onPressed}) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: viewModel.isLoading ? null : _register,
-        child: viewModel.isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text('Create Account'),
+        onPressed: isLoading ? null : onPressed,
+        child: isLoading ? const CircularProgressIndicator() : Text(label),
       ),
     );
   }
 
-  Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final success = await context.read<AuthViewModel>().register(
-      _nameController.text.trim(),
-      _emailController.text.trim(),
-      _passwordController.text,
-    );
-
-    if (success && mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const TodoFormScreen()),
+  // Logic for Step 1
+  Future<void> _requestOtp(AuthViewModel vm) async {
+    await vm.requestOtp(_phoneController.text.trim());
+    if (vm.state == AuthState.otpSent && mounted) {
+      // THE REALISTIC WAY: Show the OTP in a snackbar so you can type it
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('DEBUG MODE OTP: ${vm.generatedOtp}'),
+          duration: const Duration(seconds: 8),
+          backgroundColor: Colors.green,
+        ),
       );
     }
   }
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
+  // Logic for Step 2
+  Future<void> _completeRegister(AuthViewModel vm) async {
+    final success = await vm.register(
+      username: _phoneController.text.trim(),
+      password: _passwordController.text,
+      otp: _otpController.text.trim(),
+    );
+
+    if (success && mounted) {
+      context.goNamed(AppRoutes.main);
+    }
   }
 }

@@ -5,9 +5,9 @@ part 'user_model.g.dart';
 @JsonSerializable()
 class UserModel {
   final int id;
-  final String fullname;
-  final String username;
-  final String phone;
+  final String? fullname;
+  final String? username;
+  final String? phone;
   final String? dob;    // Nullable in case the user hasn't set it
   final String? gender; 
   final String? address;
@@ -19,9 +19,9 @@ class UserModel {
 
   UserModel({
     required this.id,
-    required this.fullname,
-    required this.username,
-    required this.phone,
+    this.fullname,
+    this.username,
+    this.phone,
     this.dob,
     this.gender,
     this.address,

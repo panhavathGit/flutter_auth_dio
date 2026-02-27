@@ -4,7 +4,7 @@ class ApiConfig {
   // Auth
   static const String login = 'customer/api/v1/auth/login';
   static const String register = 'customer/api/v1/auth/register';
-  static const String requestOTP = 'customer/api/v1/auth/request-otp';
+  static const String requestOtp = 'customer/api/v2/auth/request-otp/sign-up';
   static const String refreshToken = 'customer/api/v1/auth/token';
   static const String logout = 'auth/logout';
 

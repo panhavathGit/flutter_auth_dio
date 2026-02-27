@@ -1,7 +1,7 @@
 import 'package:auth_dio/core/config/api_config.dart';
 import 'package:dio/dio.dart';
 import '../services/storage_service.dart';
-import '../../features/auth/data/models/http/auth_response.dart';
+import '../../features/auth/data/models/http/auth/auth_response.dart';
 import '../utils/logger.dart';
 
 class AuthInterceptor extends Interceptor {
@@ -13,14 +13,30 @@ class AuthInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
     // Every request does these bellow 2 steps
-    final token = await _storageService.getAccessToken(); // 1. reads token from StorageService
+    // final token = await _storageService.getAccessToken(); // 1. reads token from StorageService
 
-    AppLogger.d('🔑 Token: $token');
-    AppLogger.d('🌐 Request URL: ${options.uri}');
+    // Now configure path because we don't want interceptor to attach token even 
+    // when the user is actually register, request otp and login
 
-    if (token != null) {
-      options.headers['Authorization'] = 'Bearer $token'; // 2. attaches 'Authorization: Bearer eyJ...' to header
+    final publicPaths = [
+      ApiConfig.login,
+      ApiConfig.register,
+      ApiConfig.requestOtp, 
+    ];
+
+    AppLogger.d('📌 options.path: ${options.path}');
+
+    final isPublic = publicPaths.any((path) => options.path.contains(path));
+
+    if (!isPublic) {
+      final token = await _storageService.getAccessToken();
+      AppLogger.d('Token: $token');
+      if (token != null) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     }
+
+    AppLogger.d('Request URL: ${options.uri}');
     handler.next(options);
   }
 
@@ -61,13 +77,13 @@ class AuthInterceptor extends Interceptor {
           final authResponse = AuthResponse.fromJson(response.data);
 
           // 3. Save new tokens to storage
-          await _storageService.saveAccessToken(authResponse.accessToken);
-          await _storageService.saveRefreshToken(authResponse.refreshToken);
+          await _storageService.saveAccessToken(authResponse.accessToken!);
+          await _storageService.saveRefreshToken(authResponse.refreshToken!);
 
           // CHANGE 3: Update the original request's header.
           // We must manually overwrite the old 'Authorization' header with the brand new token.
           final requestOptions = err.requestOptions;
-          requestOptions.headers['Authorization'] = 'Bearer ${authResponse.accessToken}';
+          requestOptions.headers['Authorization'] = 'Bearer ${authResponse.accessToken!}';
 
           // CHANGE 4: Retry the original request using the main Dio instance.
           // handler.resolve() tells Dio "Ignore the error, here is the new successful response."
